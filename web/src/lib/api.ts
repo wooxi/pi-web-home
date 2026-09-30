@@ -30,6 +30,21 @@ import type {
   WorkspaceListing,
 } from "./types.ts";
 
+/** The three approval-gate modes the bundled pi-auto-approval extension knows. */
+export type ApprovalMode = "off" | "fallback" | "auto";
+
+export interface ApprovalState {
+  /** false when the extension package is missing — sessions run ungated. */
+  available: boolean;
+  mode: ApprovalMode;
+}
+
+export interface ApprovalUpdate extends ApprovalState {
+  ok: true;
+  /** How many live sessions received `/auto-approval <mode>` right away. */
+  applied: number;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -224,6 +239,19 @@ export const api = {
     request<WebSettings>("/api/settings", {
       method: "PUT",
       body: JSON.stringify(patch),
+    }),
+
+  /** Approval-gate mode (pi-auto-approval). Cheap: a config file read, no pi. */
+  getApproval: () => request<ApprovalState>("/api/approval"),
+
+  /**
+   * Switch the mode globally: the config file is rewritten and live sessions
+   * receive `/auto-approval <mode>` immediately.
+   */
+  updateApproval: (mode: ApprovalMode) =>
+    request<ApprovalUpdate>("/api/approval", {
+      method: "PUT",
+      body: JSON.stringify({ mode }),
     }),
 
   /**

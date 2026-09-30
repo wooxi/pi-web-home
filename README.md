@@ -136,6 +136,16 @@ All environment variables are optional:
 | `PI_WEB_HOME_HOME` | `~/.pi-web-home` | Data directory root |
 | `PI_WEB_HOME_SESSION_DIR` | pi's default | Force pi sessions under this root |
 
+
+## Approval mode (built-in pi-auto-approval)
+
+Every session ships with an [pi-auto-approval](https://github.com/Europa2061/pi-auto-approval) gate. A switch next to the model picker (labels in Chinese) toggles it:
+
+- **智能审批** (Smart, default): AI clears low-risk actions, asks you in a dialog when unsure
+- **全自动** (Full auto): AI-only review — unsure or failed actions are blocked
+- **关闭** (Off): no gating, tool calls run directly
+
+Switching applies to running sessions immediately. The classifier uses the current session model by default (one extra LLM call per gated step); every decision lands in an audit log.
 ## Getting started
 
 1. Open `http://<server-ip>:8319` in a browser.

@@ -6,6 +6,7 @@ import {
 import { join, resolve } from "node:path";
 import type { Writable } from "node:stream";
 import { IDLE_TIMEOUT_MS, MAX_ACTIVE_SESSIONS, SESSION_DIR_OVERRIDE } from "./config.ts";
+import { approvalExtensionEntry } from "./approval.ts";
 
 /**
  * `RpcClient` spawns `node <cliPath> --mode rpc ...` with `cwd` set to the
@@ -86,12 +87,19 @@ class SessionRegistry {
   private readonly idleTimeoutMs: number;
   private readonly maxActiveSessions: number;
   private readonly sessionDir: string | null;
+  /** Extra pi args injected into every spawn, resolved once per registry. */
+  private readonly spawnArgs: string[];
 
   constructor(options: SessionRegistryOptions = {}) {
     this.cliPath = options.cliPath ?? DEFAULT_CLI_PATH;
     this.idleTimeoutMs = options.idleTimeoutMs ?? IDLE_TIMEOUT_MS;
     this.maxActiveSessions = options.maxActiveSessions ?? MAX_ACTIVE_SESSIONS;
     this.sessionDir = options.sessionDir ?? SESSION_DIR_OVERRIDE;
+    // The bundled pi-auto-approval extension gates tool calls in every session.
+    // Resolved once: a missing dependency degrades to no approval gate rather
+    // than breaking spawn.
+    const approvalEntry = approvalExtensionEntry();
+    this.spawnArgs = approvalEntry ? ["-e", approvalEntry] : [];
   }
 
   onEvent(listener: SessionEventListener): () => void {
@@ -345,6 +353,7 @@ class SessionRegistry {
       cliPath: this.cliPath,
       cwd: projectPath,
       args: [
+        ...this.spawnArgs,
         ...(this.sessionDir ? ["--session-dir", this.sessionDir] : []),
         ...(sessionPath ? ["--session", sessionPath] : []),
       ],
@@ -425,6 +434,9 @@ export const registry = new SessionRegistry();
  * rule the client writes for its own commands.
  */
 export function sendRawCommand(client: RpcClient, command: unknown): void {
+  // SAFETY: `RpcClient` spawns its child in the constructor and keeps it on
+  // `process`; only presence is checked here, and the write uses the same
+  // JSONL frame format the client itself writes.
   const stdin = (client as unknown as { process?: { stdin?: Writable } }).process?.stdin;
   if (!stdin || stdin.destroyed || !stdin.writable) {
     throw new Error("pi process stdin is not writable; cannot answer the dialog");

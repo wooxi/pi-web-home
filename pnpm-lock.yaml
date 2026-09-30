@@ -11,6 +11,9 @@ importers:
       '@earendil-works/pi-coding-agent':
         specifier: ^0.99.1
         version: 0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(ws@8.21.3)
+      pi-auto-approval:
+        specifier: ^0.1.1
+        version: 0.1.1(@earendil-works/pi-ai@0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3))(@earendil-works/pi-coding-agent@0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(ws@8.21.3))
 
   server:
     dependencies:
@@ -1617,6 +1620,24 @@ packages:
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
+
+  pi-auto-approval@0.1.1:
+    resolution: {integrity: sha512-EQpRlC63ryzJWh2hYgnzyTtoAWfznft45C0fox1G/4qm8RsANRKS/CTGc0/A5mWVs7KeEp/w44jeW7HvJxnoOQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@earendil-works/pi-ai': '*'
+      '@earendil-works/pi-coding-agent': '*'
+      '@oh-my-pi/pi-ai': '*'
+      '@oh-my-pi/pi-coding-agent': '*'
+    peerDependenciesMeta:
+      '@earendil-works/pi-ai':
+        optional: true
+      '@earendil-works/pi-coding-agent':
+        optional: true
+      '@oh-my-pi/pi-ai':
+        optional: true
+      '@oh-my-pi/pi-coding-agent':
+        optional: true
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -3726,6 +3747,11 @@ snapshots:
   pathe@1.1.2: {}
 
   pathval@2.0.1: {}
+
+  pi-auto-approval@0.1.1(@earendil-works/pi-ai@0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3))(@earendil-works/pi-coding-agent@0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(ws@8.21.3)):
+    optionalDependencies:
+      '@earendil-works/pi-ai': 0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(undici@8.10.2)(ws@8.21.3)
+      '@earendil-works/pi-coding-agent': 0.99.1(@aws-sdk/credential-provider-node@3.972.83)(@smithy/signature-v4@5.7.3)(ws@8.21.3)
 
   picocolors@1.1.1: {}
 

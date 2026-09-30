@@ -209,6 +209,18 @@ export const zhCN = {
   "stats.cacheWrite": "缓存写入",
   "stats.output": "输出",
   "stats.seconds": "{seconds}秒",
+  // --- approval gate --------------------------------------------------------
+  // The three mode names stay Chinese in every language (product decision —
+  // the modes are named in Chinese everywhere); only the descriptions localize.
+  "approval.menuLabel": "审批模式",
+  "approval.pill": "审批：{mode}",
+  "approval.currentLabel": "审批模式：{mode}",
+  "approval.off": "关闭",
+  "approval.offDesc": "不做自动审批，工具调用直接执行",
+  "approval.fallback": "智能审批",
+  "approval.fallbackDesc": "AI 审查低风险动作，可疑时弹窗人工确认",
+  "approval.auto": "全自动",
+  "approval.autoDesc": "仅 AI 审查，可疑或失败一律阻止",
   "context.title": "上下文",
   "context.unknown": "上下文用量未知",
   "context.breakdown": "上下文 {percent}% · {used} / {window}",
@@ -800,6 +812,18 @@ export const en: Record<MessageKey, string> = {
   "stats.cacheWrite": "Cache write",
   "stats.output": "Output",
   "stats.seconds": "{seconds}s",
+  // --- approval gate --------------------------------------------------------
+  // Mode names stay Chinese in every language (product decision); only the
+  // descriptions localize.
+  "approval.menuLabel": "审批模式",
+  "approval.pill": "审批：{mode}",
+  "approval.currentLabel": "审批模式：{mode}",
+  "approval.off": "关闭",
+  "approval.offDesc": "No gating — tool calls run directly",
+  "approval.fallback": "智能审批",
+  "approval.fallbackDesc": "AI clears low-risk actions; asks you when unsure",
+  "approval.auto": "全自动",
+  "approval.autoDesc": "AI-only review — unsure or failed actions are blocked",
   "context.title": "Context",
   "context.unknown": "Context usage unknown",
   "context.breakdown": "Context {percent}% · {used} / {window}",

@@ -5,6 +5,7 @@ import { actions, appStore, useT } from "../../lib/app-state.ts";
 import { useStore } from "../../lib/store.ts";
 import { AttachmentInput, AttachmentStrip, AttachButton } from "./AttachmentStrip.tsx";
 import { ModelPicker } from "./ModelPicker.tsx";
+import { ApprovalPicker } from "./ApprovalPicker.tsx";
 import { SlashMenu } from "./SlashMenu.tsx";
 import { useComposerState } from "./useComposerState.ts";
 import { useImageDraft } from "./useImageDraft.ts";
@@ -227,6 +228,7 @@ export function NewSessionHero() {
               onFiles={(files) => void draft.attach(files)}
             />
             <span className={styles.toolbarHint}>{t("hero.keyboardHint")}</span>
+            <ApprovalPicker />
             {project ? (
               <ModelPicker
                 model={composer.state?.model ?? null}

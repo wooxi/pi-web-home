@@ -3,6 +3,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { homedir } from "node:os";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import { wantsFrame, type EventBus } from "./bus.ts";
+import {
+  approvalExtensionEntry,
+  isApprovalMode,
+  readApprovalMode,
+  writeApprovalMode,
+  type ApprovalMode,
+} from "./approval.ts";
 import { BUILTIN_COMMANDS, runBuiltinCommand } from "./commands.ts";
 import { badRequest, forbidden, HttpError, notFound } from "./errors.ts";
 import type { StaticHandler } from "./static.ts";
@@ -961,6 +968,48 @@ export function createRequestHandler(deps: RouteDeps): (req: IncomingMessage, re
     const view = await importMcpConfigs(optionalProjectPath(payload), kinds);
     await registry.closeAllExcept(null, "mcp-config-changed");
     json(res, 200, view);
+  });
+
+  // --- approval gate ---------------------------------------------------------
+
+  /**
+   * The approval-gate mode backed by the bundled `pi-auto-approval` extension.
+   * Read from the config file the extension honors (the server sets its path
+   * env before any spawn), so a mode flipped by `/auto-approval` inside any
+   * session is visible here too.
+   */
+  route("GET", "/api/approval", ({ res }) => {
+    json(res, 200, {
+      available: approvalExtensionEntry() !== null,
+      mode: readApprovalMode(),
+    });
+  });
+
+  /**
+   * Switch the approval mode globally.
+   *
+   * Two writes, because the extension reads its config once per process: the
+   * file is rewritten for sessions that spawn later, and every live session
+   * receives `/auto-approval <mode>` — pi executes extension commands on
+   * prompt submission (even mid-run) and the command persists the same file.
+   * Dead or prewarmed handles are skipped; sessions spawning later pick up
+   * the file.
+   */
+  route("PUT", "/api/approval", async ({ res, body }) => {
+    const payload = asObject(body);
+    const mode: unknown = payload.mode;
+    if (!isApprovalMode(mode)) {
+      throw badRequest("mode must be one of off | fallback | auto");
+    }
+    writeApprovalMode(mode);
+    const live = registry
+      .list()
+      .filter((handle) => !handle.dead && !handle.prewarmed);
+    const settled = await Promise.allSettled(
+      live.map((handle) => handle.client.prompt(`/auto-approval ${mode as ApprovalMode}`)),
+    );
+    const applied = settled.filter((s) => s.status === "fulfilled").length;
+    json(res, 200, { ok: true, mode, applied });
   });
 
   /**

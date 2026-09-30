@@ -11,6 +11,7 @@ import { AttachmentInput, AttachmentStrip, AttachButton } from "./AttachmentStri
 import { useImageDraft } from "./useImageDraft.ts";
 import { ContextMeter } from "./ContextMeter.tsx";
 import { ModelPicker } from "./ModelPicker.tsx";
+import { ApprovalPicker } from "./ApprovalPicker.tsx";
 import { SlashMenu } from "./SlashMenu.tsx";
 import { useSlashCompletion } from "./useSlashCompletion.ts";
 import styles from "./Composer.module.css";
@@ -220,6 +221,9 @@ export function Composer({
           />
 
           <span className={styles.spacer} />
+
+          {/* Approval-gate mode switch: global, one file behind every session. */}
+          <ApprovalPicker />
 
           {session ? (
             <ModelPicker

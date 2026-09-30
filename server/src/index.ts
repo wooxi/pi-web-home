@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { bus } from "./bus.ts";
+import { ensureApprovalEnvironment } from "./approval.ts";
 import { HOST, OPEN_BROWSER, PORT, STATIC_DIR } from "./config.ts";
 import { registry } from "./registry.ts";
 import { createRequestHandler } from "./routes.ts";
@@ -49,6 +50,11 @@ const handler = createRequestHandler({ registry, bus, staticHandler });
 const server = createServer((req, res) => {
   void handler(req, res);
 });
+
+// Wire the approval-gate environment before any session process can spawn:
+// the config path env plus a default config file (smart approval, fallback
+// mode) so a fresh install is gated from its first tool call.
+ensureApprovalEnvironment();
 
 const stopSweeper = registry.startSweeper();
 
