@@ -10,7 +10,7 @@ npx pi-web-home    # 在 http://<服务器IP>:8319 提供界面
 
 | 深色主题 | 浅色主题 |
 | :---: | :---: |
-| ![深色主题下的主界面](https://cdn.jsdelivr.net/gh/woxihejinghao/pi-web@main/docs/images/overview-dark.png) | ![浅色主题下的主界面](https://cdn.jsdelivr.net/gh/woxihejinghao/pi-web@main/docs/images/overview-light.png) |
+| ![深色主题下的主界面](./images/overview-dark.png) | ![浅色主题下的主界面](./images/overview-light.png) |
 
 ## 功能
 

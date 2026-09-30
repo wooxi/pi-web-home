@@ -10,7 +10,7 @@ npx pi-web-home    # serves the UI on http://<your-ip>:8319
 
 | Dark theme | Light theme |
 | :---: | :---: |
-| ![Main view in the dark theme](https://cdn.jsdelivr.net/gh/woxihejinghao/pi-web@main/docs/images/overview-dark.en.png) | ![Main view in the light theme](https://cdn.jsdelivr.net/gh/woxihejinghao/pi-web@main/docs/images/overview-light.en.png) |
+| ![Main view in the dark theme](./docs/images/overview-dark.png) | ![Main view in the light theme](./docs/images/overview-light.png) |
 
 ## Features
 
