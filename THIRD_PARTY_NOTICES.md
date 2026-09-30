@@ -77,7 +77,18 @@ SOFTWARE.
 
 ---
 
-## 3. 其它第三方资源
+## 3. pi-auto-approval（vendor 进本仓库）
+
+- 上游：<https://github.com/Europa2061/pi-auto-approval>
+- 许可：Apache-2.0（完整许可文本见 `extensions/pi-auto-approval/LICENSE`）
+- 版权：Copyright 2026 Europa2061
+
+`extensions/pi-auto-approval/` 下的代码自上游 v0.1.1 复制并做了本地修改
+（信息类通知改为状态栏输出、新增 `/auto-approval model <provider/id>` 直接
+设置、审批开关随本项目的配置文件托管）。按 Apache-2.0 要求保留其 LICENSE、
+ NOTICE 与修改声明——上游如附带 NOTICE 文件，其内容同样随本目录分发。
+
+## 4. 其它第三方资源
 
 - **shiki** 及其语法/主题数据：本项目只消费其公开 API（`@shikijs/*` 通过 `shiki` 包引入），语言表的选择是产品决定，见上表。
 - **npm 依赖树**：截至开源时的扫描结果全部为宽松许可（MIT / ISC / Apache-2.0 / BSD-3-Clause / 0BSD），无 copyleft 依赖。

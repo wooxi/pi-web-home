@@ -30,18 +30,20 @@ import type {
   WorkspaceListing,
 } from "./types.ts";
 
-/** The three approval-gate modes the bundled pi-auto-approval extension knows. */
+/** The three approval-gate modes the vendored pi-auto-approval extension knows. */
 export type ApprovalMode = "off" | "fallback" | "auto";
 
 export interface ApprovalState {
-  /** false when the extension package is missing — sessions run ungated. */
+  /** false when the vendored extension is missing — sessions run ungated. */
   available: boolean;
   mode: ApprovalMode;
+  /** `provider/id` of the classifier model, or null for "follow the session". */
+  classifierModel: string | null;
 }
 
 export interface ApprovalUpdate extends ApprovalState {
   ok: true;
-  /** How many live sessions received `/auto-approval <mode>` right away. */
+  /** How many live sessions received the `/auto-approval` command right away. */
   applied: number;
 }
 
@@ -245,13 +247,14 @@ export const api = {
   getApproval: () => request<ApprovalState>("/api/approval"),
 
   /**
-   * Switch the mode globally: the config file is rewritten and live sessions
-   * receive `/auto-approval <mode>` immediately.
+   * Switch mode and/or classifier model globally: the config file is
+   * rewritten and live sessions receive the matching `/auto-approval`
+   * command immediately.
    */
-  updateApproval: (mode: ApprovalMode) =>
+  updateApproval: (patch: { mode?: ApprovalMode; classifierModel?: string | null }) =>
     request<ApprovalUpdate>("/api/approval", {
       method: "PUT",
-      body: JSON.stringify({ mode }),
+      body: JSON.stringify(patch),
     }),
 
   /**

@@ -223,7 +223,7 @@ export function Composer({
           <span className={styles.spacer} />
 
           {/* Approval-gate mode switch: global, one file behind every session. */}
-          <ApprovalPicker />
+          <ApprovalPicker models={session?.models ?? null} />
 
           {session ? (
             <ModelPicker

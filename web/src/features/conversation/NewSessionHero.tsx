@@ -228,7 +228,7 @@ export function NewSessionHero() {
               onFiles={(files) => void draft.attach(files)}
             />
             <span className={styles.toolbarHint}>{t("hero.keyboardHint")}</span>
-            <ApprovalPicker />
+            <ApprovalPicker models={composer.state?.models ?? null} />
             {project ? (
               <ModelPicker
                 model={composer.state?.model ?? null}

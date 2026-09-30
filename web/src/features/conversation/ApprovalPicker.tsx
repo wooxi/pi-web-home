@@ -5,9 +5,22 @@ import { Glyph } from "../../components/dsh-icons.tsx";
 import { actions, appStore, useT } from "../../lib/app-state.ts";
 import { useStoreSelector } from "../../lib/store.ts";
 import { api, type ApprovalMode, type ApprovalState } from "../../lib/api.ts";
+import type { ComposerModel } from "../../lib/types.ts";
 import styles from "./ApprovalPicker.module.css";
 
 const MODES: ApprovalMode[] = ["fallback", "auto", "off"];
+
+/** Keyboard highlight sentinel for the "follow session model" classifier row. */
+const CLASSIFIER_INDEX = -1;
+
+export interface ApprovalPickerProps {
+  /**
+   * The session's available models, for the classifier submenu. The approval
+   * gate is global, so the list is only a picker aid — the choice itself is
+   * server state. Null hides the section (models not enumerated yet).
+   */
+  models?: ComposerModel[] | null;
+}
 
 /**
  * The approval-gate mode switch, sitting left of the model picker.
@@ -20,7 +33,7 @@ const MODES: ApprovalMode[] = ["fallback", "auto", "off"];
  * server (`/auto-approval <mode>` runs as a prompt, which pi executes
  * immediately even mid-run).
  */
-export function ApprovalPicker() {
+export function ApprovalPicker({ models = null }: ApprovalPickerProps) {
   const t = useT();
   const [state, setState] = useState<ApprovalState | null>(null);
   const [open, setOpen] = useState(false);
@@ -35,7 +48,7 @@ export function ApprovalPicker() {
     api
       .getApproval()
       .then(setState)
-      .catch(() => setState({ available: false, mode: "fallback" }));
+      .catch(() => setState({ available: false, mode: "fallback", classifierModel: null }));
   };
 
   useEffect(refresh, []);
@@ -74,10 +87,30 @@ export function ApprovalPicker() {
     setPending(true);
     // Optimistic: the config write is fast, the fan-out to live sessions is
     // what may take a moment, and a stale pill is worse than a bold one.
-    setState({ available: true, mode });
+    setState({ available: true, mode, classifierModel: state.classifierModel });
     api
-      .updateApproval(mode)
-      .then((next) => setState({ available: next.available, mode: next.mode }))
+      .updateApproval({ mode })
+      .then((next) => setState(next))
+      .catch((err: Error) => {
+        refresh();
+        actions.setNotice(err.message);
+      })
+      .finally(() => setPending(false));
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
+
+  const chooseClassifier = (value: string | null): void => {
+    if (pending) {
+      setOpen(false);
+      buttonRef.current?.focus();
+      return;
+    }
+    setPending(true);
+    setState({ available: true, mode: state.mode, classifierModel: value });
+    api
+      .updateApproval({ classifierModel: value })
+      .then((next) => setState(next))
       .catch((err: Error) => {
         refresh();
         actions.setNotice(err.message);
@@ -138,6 +171,47 @@ export function ApprovalPicker() {
           tabIndex={-1}
           onKeyDown={onKeyDown}
         >
+          <div className={styles.viewport}>
+          <div className={styles.groupTitle}>{t("approval.classifierTitle")}</div>
+          <button
+            type="button"
+            role="option"
+            aria-selected={highlight === CLASSIFIER_INDEX}
+            data-index={CLASSIFIER_INDEX}
+            className={clsx(styles.item, highlight === CLASSIFIER_INDEX && styles.itemActive)}
+            disabled={pending}
+            title={t("approval.classifierCurrent")}
+            onMouseEnter={() => setHighlight(CLASSIFIER_INDEX)}
+            onClick={() => chooseClassifier(null)}
+          >
+            <span className={styles.itemText}>
+              <span className={styles.itemName}>{t("approval.classifierCurrent")}</span>
+            </span>
+            {state.classifierModel === null ? <CheckIcon /> : null}
+          </button>
+          {(models ?? []).map((entry) => {
+            const ref = `${entry.provider}/${entry.id}`;
+            return (
+              <button
+                key={ref}
+                type="button"
+                role="option"
+                aria-selected={false}
+                data-index={-1}
+                className={styles.item}
+                disabled={pending}
+                title={ref}
+                onClick={() => chooseClassifier(ref)}
+              >
+                <span className={styles.itemText}>
+                  <span className={styles.itemName}>{entry.name ?? entry.id}</span>
+                  <span className={styles.itemDesc}>{ref}</span>
+                </span>
+                {state.classifierModel === ref ? <CheckIcon /> : null}
+              </button>
+            );
+          })}
+          <div className={styles.groupTitle}>{t("approval.modeTitle")}</div>
           {MODES.map((mode, index) => (
             <button
               key={mode}
@@ -157,6 +231,7 @@ export function ApprovalPicker() {
               {mode === state.mode ? <CheckIcon /> : null}
             </button>
           ))}
+          </div>
         </div>
       ) : null}
     </span>

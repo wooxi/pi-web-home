@@ -1,11 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { DATA_DIR } from "./config.ts";
 
 /**
  * Approval gating for spawned pi sessions, backed by the `pi-auto-approval`
- * extension (an npm dependency of this package).
+ * extension, vendored into this repository.
  *
  * The server owns the extension's config file: it is written under
  * `DATA_DIR`, passed to every spawned pi process through
@@ -37,18 +37,18 @@ export function approvalConfigPath(): string {
 }
 
 /**
- * The extension entry (`index.ts`) inside this package's dependency tree, or
- * null when the package is missing — sessions then run without the approval
- * gate and the API reports `available: false`.
+ * The extension is vendored into this repository at
+ * `extensions/pi-auto-approval/` (Apache-2.0, from Europa2061/pi-auto-approval).
+ * Returns the entry file's absolute path, or null when the checkout is
+ * incomplete — sessions then run without the approval gate and the API
+ * reports `available: false`.
  */
 export function approvalExtensionEntry(): string | null {
-  try {
-    const require = createRequire(import.meta.url);
-    const entry = require.resolve("pi-auto-approval");
-    return typeof entry === "string" && entry.length > 0 ? entry : null;
-  } catch {
-    return null;
-  }
+  const entry = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../extensions/pi-auto-approval/index.ts",
+  );
+  return existsSync(entry) ? entry : null;
 }
 
 /** The extension's own defaults, with `enabled` flipped on (web-first UX). */
@@ -83,15 +83,39 @@ function parseConfigFile(path: string): Record<string, unknown> {
   }
 }
 
-/** The effective mode: `enabled: false` reads as `off`. Unknown → fallback. */
-export function readApprovalMode(): ApprovalMode {
-  try {
-    const parsed = parseConfigFile(approvalConfigPath());
-    if (parsed.enabled === false) return "off";
-    return parsed.mode === "auto" ? "auto" : "fallback";
-  } catch {
-    return "fallback";
-  }
+/** The effective approval state: mode plus the classifier model reference. */
+export interface ApprovalSettings {
+  mode: ApprovalMode;
+  /** `provider/id`, or null for "follow the session model". */
+  classifierModel: string | null;
+}
+
+/** The effective state: `enabled: false` reads as `off`. Unknown → defaults. */
+export function readApprovalSettings(): ApprovalSettings {
+  const parsed = parseConfigFile(approvalConfigPath());
+  if (parsed.enabled === false) return { mode: "off", classifierModel: null };
+  return {
+    mode: parsed.mode === "auto" ? "auto" : "fallback",
+    classifierModel: typeof parsed.classifierModel === "string" && parsed.classifierModel.length > 0
+      ? parsed.classifierModel
+      : null,
+  };
+}
+
+/**
+ * Set the classifier model without touching the mode. `null` means "follow
+ * the active session model".
+ */
+export function writeClassifierModel(value: string | null): void {
+  const path = approvalConfigPath();
+  const current = parseConfigFile(path);
+  const next = {
+    ...DEFAULT_CONFIG,
+    ...current,
+    classifierModel: value,
+  };
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(next, null, "\t")}\n`);
 }
 
 /**
@@ -119,6 +143,9 @@ export function writeApprovalMode(mode: ApprovalMode): void {
  */
 export function ensureApprovalEnvironment(): void {
   process.env.PI_AUTO_APPROVAL_CONFIG_PATH = approvalConfigPath();
+  // Keep the extension's JSONL audit log next to the rest of the app state
+  // instead of inside the vendored source tree.
+  process.env.PI_AUTO_APPROVAL_LOGS_DIR = join(DATA_DIR, "approval-logs");
   if (!existsSync(approvalConfigPath())) {
     writeApprovalMode("fallback");
   }

@@ -139,13 +139,13 @@ pi install npm:pi-web-home
 
 ## 审批模式（内置 pi-auto-approval）
 
-每个会话内置 [pi-auto-approval](https://github.com/Europa2061/pi-auto-approval) 审批关口，输入框下方可随时切换：
+每个会话内置 [pi-auto-approval](https://github.com/Europa2061/pi-auto-approval) 审批关口（代码已集成至 `extensions/pi-auto-approval/`，Apache-2.0），输入框下方可随时切换：
 
 - **智能审批**（默认）：AI 审查低风险动作自动放行，可疑时弹窗人工确认
 - **全自动**：仅 AI 审查，可疑或失败一律阻止（无人值守适用）
 - **关闭**：不启用审批，工具调用直接执行
 
-切换立即对进行中的会话生效；分类器默认使用当前会话模型（每步多一次 LLM 调用），审批记录写入审计日志。
+切换立即对进行中的会话生效；同一菜单可选择审查模型（默认跟随会话模型，每步多一次 LLM 调用），审批记录写入审计日志。
 ## 快速上手
 
 1. 浏览器打开 `http://<服务器IP>:8319`。

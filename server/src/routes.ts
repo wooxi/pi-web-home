@@ -6,8 +6,9 @@ import { wantsFrame, type EventBus } from "./bus.ts";
 import {
   approvalExtensionEntry,
   isApprovalMode,
-  readApprovalMode,
+  readApprovalSettings,
   writeApprovalMode,
+  writeClassifierModel,
   type ApprovalMode,
 } from "./approval.ts";
 import { BUILTIN_COMMANDS, runBuiltinCommand } from "./commands.ts";
@@ -981,7 +982,7 @@ export function createRequestHandler(deps: RouteDeps): (req: IncomingMessage, re
   route("GET", "/api/approval", ({ res }) => {
     json(res, 200, {
       available: approvalExtensionEntry() !== null,
-      mode: readApprovalMode(),
+      ...readApprovalSettings(),
     });
   });
 
@@ -998,18 +999,38 @@ export function createRequestHandler(deps: RouteDeps): (req: IncomingMessage, re
   route("PUT", "/api/approval", async ({ res, body }) => {
     const payload = asObject(body);
     const mode: unknown = payload.mode;
-    if (!isApprovalMode(mode)) {
+    const classifierModel: unknown = payload.classifierModel;
+    const hasMode = mode !== undefined;
+    const hasClassifier = classifierModel !== undefined;
+    if (!hasMode && !hasClassifier) {
+      throw badRequest("pass mode (off | fallback | auto) and/or classifierModel (string | null)");
+    }
+    if (hasMode && !isApprovalMode(mode)) {
       throw badRequest("mode must be one of off | fallback | auto");
     }
-    writeApprovalMode(mode);
+    if (hasClassifier && classifierModel !== null && typeof classifierModel !== "string") {
+      throw badRequest("classifierModel must be a string or null");
+    }
+    if (hasMode) writeApprovalMode(mode as ApprovalMode);
+    let command = hasMode ? `/auto-approval ${mode as ApprovalMode}` : "";
+    if (hasClassifier) {
+      const value = classifierModel as string | null;
+      writeClassifierModel(value);
+      command = `/auto-approval model ${value === null ? "current" : value}`;
+    }
     const live = registry
       .list()
       .filter((handle) => !handle.dead && !handle.prewarmed);
     const settled = await Promise.allSettled(
-      live.map((handle) => handle.client.prompt(`/auto-approval ${mode as ApprovalMode}`)),
+      live.map((handle) => handle.client.prompt(command)),
     );
     const applied = settled.filter((s) => s.status === "fulfilled").length;
-    json(res, 200, { ok: true, mode, applied });
+    json(res, 200, {
+      ok: true,
+      ...(hasMode ? { mode } : {}),
+      ...(hasClassifier ? { classifierModel } : {}),
+      applied,
+    });
   });
 
   /**

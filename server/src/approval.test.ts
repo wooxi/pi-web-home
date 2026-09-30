@@ -6,7 +6,7 @@ import {
   approvalConfigPath,
   ensureApprovalEnvironment,
   isApprovalMode,
-  readApprovalMode,
+  readApprovalSettings,
   writeApprovalMode,
 } from "./approval.ts";
 
@@ -28,14 +28,14 @@ describe("approval config", () => {
   });
 
   it("reads fallback when no config file exists yet", () => {
-    expect(readApprovalMode()).toBe("fallback");
+    expect(readApprovalSettings().mode).toBe("fallback");
   });
 
   it("ensureApprovalEnvironment sets the env and writes the default config", async () => {
     delete process.env.PI_AUTO_APPROVAL_CONFIG_PATH;
     ensureApprovalEnvironment();
     expect(process.env.PI_AUTO_APPROVAL_CONFIG_PATH).toContain("auto-approval-config.jsonc");
-    expect(readApprovalMode()).toBe("fallback");
+    expect(readApprovalSettings().mode).toBe("fallback");
     const parsed = JSON.parse(await readFile(approvalConfigPath(), "utf8")) as Record<string, unknown>;
     expect(parsed.enabled).toBe(true);
     expect(parsed.mode).toBe("fallback");
@@ -44,11 +44,11 @@ describe("approval config", () => {
 
   it("writes and reads each mode", async () => {
     writeApprovalMode("auto");
-    expect(readApprovalMode()).toBe("auto");
+    expect(readApprovalSettings().mode).toBe("auto");
     writeApprovalMode("fallback");
-    expect(readApprovalMode()).toBe("fallback");
+    expect(readApprovalSettings().mode).toBe("fallback");
     writeApprovalMode("off");
-    expect(readApprovalMode()).toBe("off");
+    expect(readApprovalSettings().mode).toBe("off");
     const parsed = JSON.parse(await readFile(approvalConfigPath(), "utf8")) as Record<string, unknown>;
     // `off` keeps the file's mode a valid one — disabling is `enabled: false`.
     expect(parsed.enabled).toBe(false);
@@ -70,9 +70,9 @@ describe("approval config", () => {
 
   it("recovers from a corrupted config file", async () => {
     await writeFile(approvalConfigPath(), "{ not json");
-    expect(readApprovalMode()).toBe("fallback");
+    expect(readApprovalSettings().mode).toBe("fallback");
     writeApprovalMode("auto");
-    expect(readApprovalMode()).toBe("auto");
+    expect(readApprovalSettings().mode).toBe("auto");
   });
 });
 
