@@ -1,0 +1,96 @@
+import { describe, expect, it } from "vitest";
+import { displayUserText, parseSkillBlock, parseSkillCall, skillCommandLabel } from "./skill-block.ts";
+
+/** Exactly the shape pi writes: `_expandSkillCommand` in `dist/core/agent-session.js`. */
+function block(name: string, body: string, args?: string): string {
+  const head = `<skill name="${name}" location="/home/user/.agents/skills/${name}/SKILL.md">`;
+  const whole = `${head}\nReferences are relative to /home/user/.agents/skills/${name}.\n\n${body}\n</skill>`;
+  return args === undefined ? whole : `${whole}\n\n${args}`;
+}
+
+describe("parseSkillBlock", () => {
+  it("parses the name, location and body", () => {
+    const parsed = parseSkillBlock(block("git-commit", "# Git Commit\n\nDo the thing."));
+    expect(parsed).toEqual({
+      name: "git-commit",
+      location: "/home/user/.agents/skills/git-commit/SKILL.md",
+      content: "References are relative to /home/user/.agents/skills/git-commit.\n\n# Git Commit\n\nDo the thing.",
+    });
+  });
+
+  it("keeps the text the user wrote after the command", () => {
+    const parsed = parseSkillBlock(block("git-commit", "# Git Commit", "fix the typo"));
+    expect(parsed?.userMessage).toBe("fix the typo");
+  });
+
+  it("treats an empty trailing argument as no message", () => {
+    const parsed = parseSkillBlock(block("git-commit", "# Git Commit", "\n"));
+    expect(parsed?.userMessage).toBeUndefined();
+  });
+
+  it("returns null for ordinary text", () => {
+    expect(parseSkillBlock("hello")).toBeNull();
+    expect(parseSkillBlock("please run <skill name=\"x\" location=\"/y\">")).toBeNull();
+  });
+
+  it("returns null when the closing tag is missing", () => {
+    expect(parseSkillBlock('<skill name="x" location="/y">\nbody')).toBeNull();
+  });
+
+  it("returns null when the block is not the whole message", () => {
+    expect(parseSkillBlock(`look at this:\n\n${block("git-commit", "body")}`)).toBeNull();
+  });
+});
+
+describe("parseSkillCall", () => {
+  it("folds the literal command a freshly sent turn still holds", () => {
+    expect(parseSkillCall("/skill:git-commit")).toEqual({ name: "git-commit" });
+  });
+
+  it("keeps the arguments beside the literal command", () => {
+    expect(parseSkillCall("/skill:git-commit fix the typo")).toEqual({
+      name: "git-commit",
+      userMessage: "fix the typo",
+    });
+  });
+
+  it("still folds the expanded block, location and all", () => {
+    expect(parseSkillCall(block("git-commit", "# Git Commit", "fix the typo"))).toEqual({
+      name: "git-commit",
+      location: "/home/user/.agents/skills/git-commit/SKILL.md",
+      userMessage: "fix the typo",
+    });
+  });
+
+  it("leaves anything that is not a whole command alone", () => {
+    expect(parseSkillCall("hello")).toBeNull();
+    expect(parseSkillCall("run /skill:git-commit")).toBeNull();
+    // pi finds no skill under an empty name and never expands this one.
+    expect(parseSkillCall("/skill:")).toBeNull();
+    expect(parseSkillCall("/skill: git-commit")).toBeNull();
+  });
+});
+
+describe("displayUserText", () => {
+  it("folds a skill block down to the command", () => {
+    expect(displayUserText(block("git-commit", "# Git Commit\n\nLots of instructions."))).toBe(
+      "/skill:git-commit",
+    );
+  });
+
+  it("keeps the arguments on the same line", () => {
+    expect(displayUserText(block("git-commit", "# Git Commit", "fix the typo"))).toBe(
+      "/skill:git-commit fix the typo",
+    );
+  });
+
+  it("passes ordinary text through unchanged", () => {
+    expect(displayUserText("hello\nthere")).toBe("hello\nthere");
+  });
+});
+
+describe("skillCommandLabel", () => {
+  it("uses the prefix pi expands", () => {
+    expect(skillCommandLabel("pdf-tools")).toBe("/skill:pdf-tools");
+  });
+});

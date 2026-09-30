@@ -1,0 +1,101 @@
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
+
+/** Root of all pi-web-home state. One directory, no scattered files. */
+export const DATA_DIR = process.env.PI_WEB_HOME_HOME
+  ? process.env.PI_WEB_HOME_HOME
+  : join(homedir(), ".pi-web-home");
+
+/** Project records (JSON, atomically written). */
+export const STORE_FILE = join(DATA_DIR, "store.json");
+
+/**
+ * HTTP port. In dev this is the API only — Vite owns the browser-facing port
+ * and proxies `/api` here. In production the same server answers both, so this
+ * *is* the address you open; the published CLI defaults it to 8319 to match
+ * what dev puts in the address bar.
+ */
+export const PORT = Number(process.env.PI_WEB_HOME_PORT ?? 8319);
+
+/**
+ * Interface to listen on. The app is meant to be reachable from other devices
+ * on the home LAN (phone, laptop), so the published server binds all
+ * interfaces by default. `PI_WEB_HOME_HOST=127.0.0.1` narrows it back to
+ * loopback only. There is no authentication — the server must never be
+ * exposed to a network beyond the trusted home LAN.
+ */
+export const HOST = process.env.PI_WEB_HOME_HOST ?? "0.0.0.0";
+
+/** A session process is stopped after this long without activity. */
+export const IDLE_TIMEOUT_MS = Number(process.env.PI_WEB_HOME_IDLE_MS ?? 10 * 60 * 1000);
+
+/** Upper bound on concurrently alive pi RPC subprocesses. */
+export const MAX_ACTIVE_SESSIONS = Number(process.env.PI_WEB_HOME_MAX_SESSIONS ?? 8);
+
+/**
+ * How much one SSE connection may buffer while its socket is backed up.
+ *
+ * `res.write` returning false means Node's own buffer is full — the client is
+ * not draining fast enough. Writing anyway is what lets a stalled stream grow
+ * without bound (the benchmark held ~690MB across four slow readers). Past this
+ * many bytes the connection is dropped instead; the browser reconnects and
+ * re-reads an authoritative snapshot.
+ */
+export const SSE_MAX_BUFFERED_BYTES = Number(
+  process.env.PI_WEB_HOME_SSE_BUFFER ?? 4 * 1024 * 1024,
+);
+
+/**
+ * When set, both session lookup and every spawned pi process use this session
+ * root instead of pi's default. Keeps the app (and its verification runs) from
+ * touching the user's real session history.
+ */
+export const SESSION_DIR_OVERRIDE = process.env.PI_WEB_HOME_SESSION_DIR ?? null;
+
+/**
+ * A cwd that resolves to an empty project scope.
+ *
+ * Settings pages can be opened before a workspace is selected, but pi hangs the
+ * project scope off `<cwd>/.pi` — its package resolver and its MCP config layer
+ * both do. Pointing at the server's own cwd would pull in this repository's
+ * files, and pointing at `$HOME` would pick up `~/.pi`, which is the *parent* of
+ * the agent dir rather than a project. A path under the agent dir that is never
+ * created gives both readers an empty project scope, which is what "no
+ * workspace" means here. Resolved per call because tests repoint the agent dir.
+ */
+export function noProjectCwd(): string {
+  return join(getAgentDir(), ".pi-web-home-no-project");
+}
+
+/**
+ * The built front end to serve, or null when there is none.
+ *
+ * `web/dist` sits two levels up from both layouts this module is compiled into
+ * — `server/src/` under tsx, `server/build/` inside the published package — so
+ * one relative path covers dev and the installed CLI.
+ *
+ * Null is a deliberate answer rather than an error: an unbuilt checkout keeps
+ * a working API instead of serving nothing, and the startup log says which one
+ * you got. `PI_WEB_HOME_STATIC_DIR` overrides the lookup, and an empty value
+ * forces API-only.
+ */
+export const STATIC_DIR: string | null = (() => {
+  const override = process.env.PI_WEB_HOME_STATIC_DIR;
+  if (override !== undefined) {
+    return override.length > 0 ? resolve(override) : null;
+  }
+  const built = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
+  return existsSync(join(built, "index.html")) ? built : null;
+})();
+
+/**
+ * Open the browser at the app URL once the server is listening.
+ *
+ * Only the published CLI opts in (it sets `PI_WEB_HOME_OPEN=1`): the dev
+ * server must not steal focus from the editor, and a test run must not open
+ * windows at all.
+ */
+export const OPEN_BROWSER = process.env.PI_WEB_HOME_OPEN === "1";

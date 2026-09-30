@@ -1,0 +1,61 @@
+{
+  "name": "pi-web-home",
+  "version": "0.5.0",
+  "description": "Local web UI for the pi coding agent — one directory per workspace, in the shell of deepseek-harness",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "bin": {
+    "pi-web-home": "bin/pi-web-home.js"
+  },
+  "files": [
+    "bin",
+    "extensions",
+    "server/build",
+    "web/dist",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "docs/README.zh-CN.md"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ],
+    "image": "https://raw.githubusercontent.com/woxihejinghao/pi-web/main/docs/images/overview-dark.png"
+  },
+  "keywords": [
+    "pi",
+    "pi-package",
+    "pi-coding-agent",
+    "coding-agent",
+    "web",
+    "ui",
+    "deepseek-harness"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woxihejinghao/pi-web.git"
+  },
+  "homepage": "https://github.com/woxihejinghao/pi-web#readme",
+  "bugs": {
+    "url": "https://github.com/woxihejinghao/pi-web/issues"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "start": "node bin/pi-web-home.js",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "prepublishOnly": "pnpm typecheck && pnpm build && pnpm test && node scripts/verify-dist.mjs"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "^0.99.1"
+  }
+}

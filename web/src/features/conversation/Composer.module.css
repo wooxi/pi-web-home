@@ -1,0 +1,167 @@
+/* No top pad, the way dsh's InputBar drops it too: the room above the card
+ * belongs to the scrolling column that precedes it, not to the composer's own
+ * box. Leaving 8px here stacked on the column's own 8px and read as a white
+ * band between the last line of the transcript and the input. */
+.wrap {
+  flex: 0 0 auto;
+  padding: 0 24px 8px;
+}
+
+/* Mirrors dsh's InputBar card: 22px corners, a 12px gap between the input and
+ * its toolbar, and horizontal padding carried by the children rather than the
+ * card so the text starts at the same offset as the toolbar icons.
+ *
+ * The edge is half a pixel of gradient, drawn as a real border with a
+ * two-layer background rather than the elevation hairline. `--dsw-elevation-soft`
+ * carries that hairline as its first layer; dsh's InputBar rebinds its colour to
+ * border-l2, which against a white page still draws a line across the top edge —
+ * exactly where the shadow cannot reach, because the soft lift blurs downward —
+ * so the stroke is pointed at `transparent` (the same move dsh makes for its
+ * workspace-trigger state) and the edge is painted instead: fully transparent at
+ * the top, border-l3 by the bottom. The bottom is the edge that sits inside the
+ * shadow and needs closing, the top is the one that only ever looked like a seam.
+ *
+ * It is a border because a masked `::after` ring cannot survive a 22px corner:
+ * subtracting a content-box mask from a border-box one leaves gaps along the
+ * arc, and the card looked cut off at all four corners. A border keeps the
+ * browser's own rounded-corner rasterisation; `box-sizing: border-box` already
+ * holds the outer size, so the half pixel costs no layout. The scrollbar pair
+ * follows the same reasoning: an elevated surface uses the l2 thumb.
+ *
+ * The lift is not `--dsw-elevation-soft`. That token blurs almost evenly and at
+ * 0.03 alpha it never separates a white card from a white page: with the top
+ * edge unstroked, the card read as cut off rather than raised, because there
+ * was nothing above it at all. Two shadow passes fix that — an all-round halo
+ * that gives the top edge its separation back, and a downward cast that does
+ * the lifting. Dark needs no counterpart: there the card is 850 on a 950 page,
+ * so it is already off the surface.
+ *
+ * Neither pass may carry a spread or a `0 0 0 Npx` ring: a ring is a real line
+ * all the way round, and the top edge is exactly where no line may appear. The
+ * halo is therefore wide and weak (32px at 0.04), which is what keeps its
+ * strongest point — the edge itself, where a blur is always at half strength —
+ * a soft gradient rather than an outline. */
+.composer {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 0;
+  border-radius: 22px;
+  border: 0.5px solid transparent;
+  background:
+    linear-gradient(var(--dsw-specific-input-major), var(--dsw-specific-input-major)) padding-box,
+    linear-gradient(180deg, transparent, var(--dsw-alias-border-l3)) border-box;
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  box-shadow:
+    0 0 32px rgba(0, 0, 0, 0.04),
+    0 8px 20px rgba(0, 0, 0, 0.07);
+  font-size: var(--dsh-content-font-size, 14px);
+  line-height: calc(24px + var(--dsh-content-font-delta, 0px));
+}
+
+.input {
+  width: 100%;
+  min-height: 36px;
+  max-height: 220px;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--dsw-alias-label-primary);
+  /* dsh's caret is the business blue, not the browser default. The uneven
+   * padding is dsh's too: 8px on the right because its scroll container adds a
+   * 4px margin on top of it, 14px on the left to line the text up with the
+   * toolbar icons below. */
+  caret-color: var(--dsw-alias-state-business-primary);
+  padding: 4px 8px 0 14px;
+}
+
+.input::placeholder {
+  color: var(--dsw-alias-label-caption);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 8px 6px;
+}
+
+.modes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.mode,
+.modeActive {
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.mode:hover {
+  color: var(--dsw-alias-label-primary);
+}
+
+.modeActive {
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: var(--dsw-elevation-panel);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Send and stop are two states of dsh's single `.uV2eYG_primary` disc — the
+ * blue `button-info-fill` one, with a white glyph. The resting state is an
+ * arrow and the running state a 10x10 rounded square, but the surface never
+ * changes, so neither does its color. The white is written as the static token
+ * rather than `#fff`: it is the same value dsh hard-codes, spelled in the
+ * palette this project consumes. */
+.send,
+.stop {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-alias-button-info-fill);
+  color: var(--dsw-static-neutral-00);
+  /* dsh lifts the button by 2px so it optically centres against the 22px
+   * corner of the card. */
+  transform: translateY(-2px);
+  transition: background-color 0.1s;
+  flex: 0 0 auto;
+}
+
+.send:hover:not(:disabled),
+.stop:hover {
+  background: var(--dsw-alias-button-info-hover);
+}
+
+.send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/*
+ * A file drag is over the card. The ring is drawn inside the existing 22px
+ * rounding rather than on a new box, so the card does not move while the file
+ * is in the air — the same reason dsh tints instead of resizing.
+ */
+.composer[data-dragging] {
+  outline: 1.5px dashed var(--dsw-alias-state-business-primary);
+  outline-offset: -2px;
+}

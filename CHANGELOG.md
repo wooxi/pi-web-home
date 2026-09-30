@@ -1,0 +1,120 @@
+# 更新日志
+
+本文件记录 pi-web-home 的显著变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+## [0.5.0] - 2026-09-24
+
+### 改进
+
+- **变更面板自动跟随工作区变化**：服务端递归监听每个项目的工作树（`node_modules` 的路径段在回调里滤掉），400ms debounce 后推一个 `workspace_changed`；面板开着且没有写操作在跑时自动重读 `git status` —— 编辑器保存、格式化、终端里的 `git` 命令都会反映进来，不必再点刷新。
+
+### 性能
+
+- **SSE 按会话订阅**：切会话时 `POST /api/events/subscription` 声明正在读哪个会话，服务端只推该会话的 token 流；侧栏状态点、扩展对话框、项目/会话列表这些低频帧照旧发给所有连接。实测 8 会话 × 4 客户端从 P50 1203ms / RSS +688MB 降到 P50 0ms / +8MB（[bench](./bench/README.md)）。
+- **SSE 背压与缓冲上限**：`res.write` 返回 false 时暂停投递、排队等 `drain`；队列超过 `SSE_MAX_BUFFERED_BYTES`（默认 4MB）断开该连接，前端 `EventSource` 重连后重读一份快照（断线期间漏掉的增量不可能被下一条补上）。
+- **图片上传前在浏览器里压缩**：长边缩到 1568px 并重新编码，截图/照片通常小一个数量级，不再让一张 5MB 截图把会话 JSONL 撑到 ~6.7MB；GIF 与小图原样放行，压缩失败或结果反而更大时回退原文件。
+- **`useT()` / `useLanguage()` 改为字段级订阅**：不再因为设置里任何一处变化而重渲整条消息列表。
+- **流式输出加 50ms 发布地板**：`message_update` 原本每帧重解析整段 partial Markdown，长回复下成本随文本增长（压测：当前会话占主线程 58%，8 会话并发直接打满）。现在最多每 50ms 发布一次，主线程占用减半以上，观感仍是连续吐字；`message_end`、`agent_settled`、工具结果仍立即发布。
+
+## [0.4.1] - 2026-09-24
+
+### 文档
+
+- **README 补上「安装后怎么启动」**：把 `npx` 零安装、`npm i -g` 全局命令、pi 包 `/web` 三种方式整理成一张对照表，附 `PI_WEB_HOME_PORT` / `PI_WEB_HOME_OPEN` 两个开关和后台常驻（`nohup`）命令；中英两份 README 同步。
+
+## [0.4.0] - 2026-09-24
+
+### 新增
+
+- **任务完成时发浏览器通知**：通用设置多了一行「浏览器通知」，默认关闭。打开后，会话任务跑完（`agent_settled`）而用户又不在看那个会话时，发一条系统通知（标题是会话名，正文一句「会话任务已完成」，点击跳回该会话）；同一会话的多次完成用 `tag` 相互替换，不堆成一摞。打开开关就是权限的申请入口——拿不到 `granted` 时开关弹回去并给一句提示，不把偏好写进 store；权限事后被浏览器撤销则静默跳过，不改写用户的选择。
+
+## [0.3.0] - 2026-09-24
+
+### 新增
+
+- **界面双语**：设置页「外观」下面多了一行语言（`跟随系统` / `简体中文` / `English`），默认跟随系统——中文机器照旧中文，其它语言落在英文；选择写进服务端 store，刷新和换浏览器都在。430 条文案进了 [字典](./web/src/lib/i18n/messages.ts)：中文表是源表，英文表按 `Record<MessageKey, string>` 收口，漏一条翻译编译不过；占位符改名有测试兜。
+- **格式也跟着语言走**：相对时间 `刚刚 / 12分钟` ↔ `just now / 12m`，耗时 `1分05秒` ↔ `1m 05s`，消息时间 `9月17日 21:00` ↔ `Sep 17, 21:00`。
+- **README 截图分语言**：英文 README 用英文界面截图，中文 README 用中文界面截图，两套图各自来自一份真实的 pi 会话（`greet` 演示项目：读 → 编辑 → 写 README → 跑 `node`）。
+
+### 说明
+
+- 右栏标签页的标题改成渲染时按 kind 查表：标签列表会跨语言切换、也会被持久化，创建时把标题存下来就会留下旧语言。
+- `app-state` 的通知在 action 内取当前语言的 translator——action 不是组件，拿不到 hook，但读 store 就能拿到用户此刻在看的语言。
+- 模块级常量表（工具变体、命令来源、MCP 作用域、插件分组、传输方式、状态词表、选项表）都改成按 `t` 求值的函数，避免把首次 import 时的语言冻住。
+
+## [0.2.2] - 2026-09-24
+
+### 修复
+
+- **npm 页面与 registry 显示的是中文版 README**。npm 用 glob `{README,README.*}` 挑包说明，而它返回的顺序是 `[README.zh-CN.md, README.md]`（不是字母序），命中第一个就 `break`——于是 0.2.1 里 `npm view pi-web-home readme`、npm 网页、以及任何读 registry 的地方（包括画廊）拿到的都是中文版。中文版移到 [docs/README.zh-CN.md](./docs/README.zh-CN.md)，根目录只剩 `README.md`，候选就只有一个；它内部的相对链接（`docs/*` → `./*`，根目录文件 → `../*`）按新位置全部改过，英文版与 CONTRIBUTING、设计说明里的链接也跟着改指新路径。
+
+## [0.2.1] - 2026-09-24
+
+### 变更
+
+- **README 拆成中英两份**：[README.md](./README.md) 为英文（npm 与 [pi.dev 画廊](https://pi.dev/packages/pi-web-home) 展示的就是这一份），[README.zh-CN.md](./README.zh-CN.md) 为中文，两份顶部一键互切。切换链接用 GitHub 绝对地址而不是相对路径，因为相对链接在 npm 页面上会 404。
+- **`files` 补上 `README.zh-CN.md`**：npm 只默认带 `README.md`，不加这一项包里就没有中文版，切换链接会指向一个不存在的文件。
+- [CONTRIBUTING.md](./CONTRIBUTING.md) 与 [设计说明](./docs/design-notes.md) 里指向 README 的链接改指中文版（英文版里没有中文锚点）。
+
+## [0.2.0] - 2026-09-24
+
+### 新增
+
+- **包本身成了 pi 包**：加上 `pi-package` 关键词与 `pi.extensions` 清单，`pi install npm:pi-web-home` 就能装进 pi 会话，同时包会被 [pi.dev/packages](https://pi.dev/packages) 画廊自动收录（那里没有提交入口，只按关键词索引 npm）。
+- **`/web` 命令**：`/web [端口] [--no-open]` 启动界面（默认沿用 5319，自动开浏览器）、`/web status` 看状态、`/web stop` 关闭。子进程由 pi 管理，`session_shutdown` 时一并结束，不留孤儿进程；端口被占用之类的启动失败会带上服务端最后几行日志报回 pi 界面。
+
+### 工程
+
+- **`scripts/verify-dist.mjs` 多两道发布闸门**：`extensions/index.js` 是否随包发出，以及 `package.json` 是否还带着 `pi-package` 关键词。后者是又一种静默失败——少了它 `npm publish` 照样成功，只是画廊永远不收录。
+
+## [0.1.1] - 2026-09-24
+
+### 改进
+
+- **代码高亮移植了 dsh 的流式增量 tokenizer**：用 `codeToTokensBase` 接上一次的 `grammarState` 按行续接，冻结最后一个换行之前的全部内容（连同它们的 HTML），每个新 delta 只重新 tokenize 正在写的那一行。200 行 typescript（约 9 KB）实测：全量一次 101ms，续接后重算最后一行 0.6ms。2 万字符上限只剩在「必须从头 tokenize」的路径上，流式增长的长块不再受它限制。
+- **语法预热扩展到按需加载的语言**：JS 引擎的 pattern 用到才编译，没预热过的 grammar 第一次 tokenize 出来的 token 比之后每一次都粗，同一块代码第二次绘制时颜色会变；现在动态 `import()` 落地后、在通知重渲染之前先跑一遍样本。
+
+### 移除
+
+- **`docs/PLAN.md`**：实现阶段的计划文档，文件结构、步骤与验证清单都已完成，其中的临时路径（`/tmp/dsh-probe`）与「待创建」目录树也已经和仓库对不上。设计取舍仍由 [设计说明](./docs/design-notes.md) 承载，原文在 git 历史里（`git show HEAD:docs/PLAN.md`）。
+- [设计说明](./docs/design-notes.md) 里重复出现两遍的 diff 解析段落（「diff 的文本理解」与「补丁的文本理解」内容一致）删去后者。
+
+### 修复
+
+- **对话流式输出时的闪烁与跳动**：
+  - 代码块不再在「纯文本 → 高亮」之间闪一下：首帧可见性改用 `useLayoutEffect` 同步量取，两种状态共用同一个容器。
+  - 一轮消息提交时不再整块重挂载：流式中的内容直接渲染在它即将落进的那一轮里，代码块不会重新上色、思考行不会自己折回。
+  - 跟随滚动改到绘制之前，并关掉浏览器滚动锚定；代码块预留横向滚动条位置，不再因横条出现/消失而整体下移。
+  - 每个 token 一次的视图发布按动画帧合并；`Markdown` 按文本记忆化、高亮结果按「语法 + 源码」缓存，流式期间不再重解析/重高亮整个转录。
+- **长行不再卡死页面**：单行超过 2 000 字符的内容直接不参与分词（`tokenizeMaxLineLength`）。一行两万字符实测要 52 秒，整页在这期间没有响应——那是 JS 正则引擎的非线性成本，原生 Oniguruma 不会这样。
+
+## [0.1.0] - 2026-09-24
+
+首次公开发布。一个本地 Web UI，套在 pi 之上：`npx pi-web-home` 启动单个进程，同时提供前端与 API。
+
+### 新增
+
+- **项目管理**：一个本地目录 = 一个项目，项目下挂该目录的会话。内置服务端目录选择器（逐级进入、地址栏可粘贴路径、主目录/桌面/文稿/下载/根目录快捷入口）。
+- **会话**：每个活跃会话对应一个 `pi --mode rpc` 子进程，活跃数上限可配，空闲自动回收（含预热进程）。
+- **对话**：SSE 流式输出、Markdown 渲染、shiki 代码高亮、图片输入、消息操作行、会话 fork 与话题树。
+- **模型选择**：新建会话时可选模型；模型配置沿用 pi 自己的配置文件，不另建一份状态。
+- **右侧栏**：文件树、文件预览、变更面板、内嵌浏览器。
+- **变更面板**：分「已暂存 / 未暂存」两份 diff、hunk 级折叠、分支列表与上游 ahead/behind、提交历史，以及写操作（暂存/取消暂存/全部暂存、提交、推送、还原、切分支）。
+- **每轮改动文件卡片**：每轮对话末尾列出该轮实际改动的文件。
+- **设置页**：通用、模型、插件、MCP 四节。
+- **扩展生态接入**：
+  - 插件清单由 pi 自己的资源解析器（`DefaultPackageManager` / `SettingsManager`）计算，与终端看到的一致。
+  - MCP 一节动态加载 `pi-mcp-adapter/config` 的公开入口，并支持真实握手检查（stdio `initialize` + `tools/list`）。
+  - 扩展的 UI 请求（`ctx.ui.confirm/select/input/editor`）**替换输入框**而非弹模态。
+  - 任务清单面板依赖 `@juicesharp/rpiv-todo`，未安装时显示一次性的安装提示。
+  - 更新检查与提示。
+- **仅监听 `127.0.0.1`**，默认不对外暴露。
+
+### 说明
+
+- 需要 Node.js `>= 22.19.0`。
+- pi 的 `todo` 工具与 MCP 能力分别由 `@juicesharp/rpiv-todo` 和 `pi-mcp-adapter` 扩展提供，本项目不内置；缺少时界面给出安装入口而非静默空白。
+
+[0.1.1]: https://github.com/woxihejinghao/pi-web/releases/tag/v0.1.1
+[0.1.0]: https://github.com/woxihejinghao/pi-web/releases/tag/v0.1.0
