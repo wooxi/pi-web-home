@@ -2,6 +2,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { Glyph, type GlyphName } from "../../components/dsh-icons.tsx";
 import { actions } from "../../lib/app-state.ts";
+import { ApprovalSection } from "./ApprovalSection.tsx";
 import { GeneralSection } from "./GeneralSection.tsx";
 import { McpSection } from "./McpSection.tsx";
 import { ModelsSection } from "./ModelsSection.tsx";
@@ -76,8 +77,10 @@ export function SettingsPage() {
             <ModelsSection className={styles.section} />
           ) : section === "plugins" ? (
             <PluginsSection className={styles.section} />
-          ) : (
+          ) : section === "mcp" ? (
             <McpSection className={styles.section} />
+          ) : (
+            <ApprovalSection className={styles.section} />
           )}
         </div>
       </div>

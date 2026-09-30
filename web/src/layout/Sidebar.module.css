@@ -525,3 +525,12 @@
   color: var(--dsw-alias-label-tertiary);
   line-height: 1.5;
 }
+
+
+/* --- Phone: rows keep their hit targets with a narrower rail ------------- */
+
+@media (max-width: 640px) {
+  :root {
+    --piws-sidebar-width: min(300px, 82vw);
+  }
+}

@@ -229,3 +229,17 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+
+/* --- Phone: the panel covers the viewport like its fullscreen mode -------- */
+
+@media (max-width: 640px) {
+  .panel {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    width: auto;
+    border-left: none;
+    box-shadow: var(--dsw-elevation-float);
+  }
+}

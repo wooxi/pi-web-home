@@ -69,6 +69,20 @@ export interface SessionStats {
   timing: LiveTiming;
   /** Output tokens over decode time, or null when this client measured none. */
   tokensPerSecond: number | null;
+  /**
+   * Billed cost summed over assistant and tool-result messages, from the
+   * `usage.cost.total` figure pi's providers report. null when no message
+   * carried one — not every provider prices its tokens.
+   */
+  cost: number | null;
+}
+
+/**
+ * Billed dollars: two decimals from a dollar up, four below it — a session of
+ * short replies lands in fractions of a cent, and two decimals would read `$0.00`.
+ */
+export function formatCost(cost: number): string {
+  return cost >= 1 ? `$${cost.toFixed(2)}` : `$${cost.toFixed(4)}`;
 }
 
 /** The three disjoint prompt-side buckets — what the provider actually bills. */
@@ -115,6 +129,12 @@ export function formatExactCount(count: number): string {
   return String(Math.round(count)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function costOf(message: AgentMessage): number | null {
+  const usage = (message as { usage?: { cost?: { total?: unknown } } }).usage;
+  const total = usage?.cost?.total;
+  return typeof total === "number" && Number.isFinite(total) ? total : null;
+}
+
 function usageOf(message: AgentMessage): UsageTotals | null {
   const usage = (message as { usage?: Partial<UsageTotals> }).usage;
   if (typeof usage !== "object" || usage === null) return null;
@@ -138,6 +158,8 @@ export function sessionStats(messages: AgentMessage[], timing: LiveTiming): Sess
   let turns = 0;
   let steps = 0;
   let model: string | null = null;
+  let cost = 0;
+  let hasCost = false;
   const usage: UsageTotals = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 
   for (const message of messages) {
@@ -160,6 +182,11 @@ export function sessionStats(messages: AgentMessage[], timing: LiveTiming): Sess
     usage.output += messageUsage.output;
     usage.cacheRead += messageUsage.cacheRead;
     usage.cacheWrite += messageUsage.cacheWrite;
+    const messageCost = costOf(message);
+    if (messageCost !== null) {
+      cost += messageCost;
+      hasCost = true;
+    }
   }
 
   return {
@@ -171,5 +198,6 @@ export function sessionStats(messages: AgentMessage[], timing: LiveTiming): Sess
     model,
     timing,
     tokensPerSecond: timing.decodeMs > 0 ? timing.decodeTokens / (timing.decodeMs / 1000) : null,
+    cost: hasCost ? cost : null,
   };
 }

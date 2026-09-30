@@ -208,6 +208,7 @@ export const zhCN = {
   "stats.cacheRead": "缓存读取",
   "stats.cacheWrite": "缓存写入",
   "stats.output": "输出",
+  "stats.cost": "累计费用",
   "stats.seconds": "{seconds}秒",
   // --- approval gate --------------------------------------------------------
   // The three mode names stay Chinese in every language (product decision —
@@ -218,6 +219,9 @@ export const zhCN = {
   "approval.classifierTitle": "审查模型",
   "approval.classifierCurrent": "跟随会话模型",
   "approval.modeTitle": "审批模式",
+  "settings.approval.title": "审批",
+  "settings.approval.modeNote": "低风险动作自动放行，可疑动作按模式兜底",
+  "settings.approval.classifierNote": "AI 审查用的模型，默认跟随会话模型",
   "dialog.confirm": "确认",
   "dialog.cancel": "取消",
   "approval.off": "关闭",
@@ -622,6 +626,7 @@ export const zhCN = {
   "session.empty": "还没有会话。",
   "layout.disconnected": "无法连接服务端，请确认 API 已启动。",
   "layout.dismiss": "关闭提示",
+  "layout.openSidebar": "打开侧栏",
 } as const;
 
 export type MessageKey = keyof typeof zhCN;
@@ -816,6 +821,7 @@ export const en: Record<MessageKey, string> = {
   "stats.cacheRead": "Cache read",
   "stats.cacheWrite": "Cache write",
   "stats.output": "Output",
+  "stats.cost": "Total cost",
   "stats.seconds": "{seconds}s",
   // --- approval gate --------------------------------------------------------
   // Mode names stay Chinese in every language (product decision); only the
@@ -826,6 +832,9 @@ export const en: Record<MessageKey, string> = {
   "approval.classifierTitle": "审查模型",
   "approval.classifierCurrent": "跟随会话模型",
   "approval.modeTitle": "审批模式",
+  "settings.approval.title": "审批",
+  "settings.approval.modeNote": "AI reviews low-risk actions; fallback per mode",
+  "settings.approval.classifierNote": "Model the AI reviewer uses; defaults to the session's model",
   "dialog.confirm": "确认",
   "dialog.cancel": "取消",
   "approval.off": "关闭",
@@ -1222,6 +1231,7 @@ export const en: Record<MessageKey, string> = {
   "session.empty": "No sessions yet.",
   "layout.disconnected": "Cannot reach the server. Is the API running?",
   "layout.dismiss": "Dismiss",
+  "layout.openSidebar": "Open sidebar",
 };
 
 export const MESSAGES: Record<UiLanguage, Record<MessageKey, string>> = {

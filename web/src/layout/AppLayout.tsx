@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
+import { Glyph } from "../components/dsh-icons.tsx";
 import { ConversationPane } from "../features/conversation/ConversationPane.tsx";
 import { Rightbar } from "../features/rightbar/Rightbar.tsx";
 import { SettingsPage } from "../features/settings/SettingsPage.tsx";
@@ -17,6 +18,10 @@ import styles from "./AppLayout.module.css";
 export function AppLayout() {
   const t = useT();
   const state = useStore(appStore);
+  // Off-canvas drawer for the sidebar on narrow screens (phone / small
+  // tablet). The button that opens it only exists in the narrow layout, so
+  // wide screens never see the backdrop.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     void actions.bootstrap();
@@ -29,6 +34,12 @@ export function AppLayout() {
     setEventSession(state.selectedSessionPath);
   }, [state.selectedSessionPath]);
 
+  // Picking a session (or leaving one) closes the phone drawer — its whole
+  // job is to get out of the way once a destination is chosen.
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [state.selectedSessionPath, state.settingsOpen]);
+
   // The settings page replaces the shell instead of sitting over it. That does
   // unmount the conversation, and remounting costs a transcript read — a few
   // milliseconds off disk, with no pi process started for it. Worth paying to
@@ -37,9 +48,26 @@ export function AppLayout() {
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+      {/* Narrow layouts only: opens the off-canvas sidebar. */}
+      <button
+        type="button"
+        className={styles.drawerToggle}
+        aria-label={t("layout.openSidebar")}
+        aria-expanded={sidebarOpen}
+        onClick={() => setSidebarOpen(true)}
+      >
+        <Glyph name="checklist" size={16} />
+      </button>
+      <aside className={clsx(styles.sidebar, sidebarOpen && styles.sidebarOpen)}>
         <Sidebar />
       </aside>
+      {sidebarOpen ? (
+        <div
+          className={styles.drawerBackdrop}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden
+        />
+      ) : null}
       <main className={styles.main}>
         {state.status === "error" ? (
           <div className={styles.empty}>{t("layout.disconnected")}</div>

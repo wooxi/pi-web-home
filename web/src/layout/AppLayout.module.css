@@ -70,3 +70,75 @@
   color: var(--dsw-alias-label-tertiary);
   font-size: 13px;
 }
+
+
+/* --- Narrow layouts: sidebar becomes an off-canvas drawer -------------------
+ *
+ * dsh's own web client is a desktop product, so there is no upstream sheet to
+ * copy for phones; these rules extend the ported visual language instead: the
+ * same sidebar surface slides over the same canvas, with the float shadow and
+ * the hairline border it already carries.
+ */
+
+.drawerToggle {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 40;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: var(--dsw-elevation-soft, var(--dsw-elevation-float));
+}
+
+.drawerToggle:hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.drawerBackdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .drawerToggle {
+    display: inline-flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: min(300px, 82vw);
+    flex: 0 0 min(300px, 82vw);
+    transform: translateX(-102%);
+    transition: transform 0.22s ease;
+    box-shadow: none;
+  }
+
+  .sidebarOpen {
+    transform: none;
+    box-shadow: var(--dsw-elevation-float);
+  }
+
+  .drawerBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgb(0 0 0 / 0.32);
+  }
+}
+
+/* --- Phone: tighten the shell so the composer keeps its room -------------- */
+
+@media (max-width: 640px) {
+  .notice {
+    max-width: calc(100vw - 24px);
+    bottom: 16px;
+  }
+}

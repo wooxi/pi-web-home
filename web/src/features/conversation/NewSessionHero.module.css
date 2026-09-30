@@ -249,3 +249,28 @@
   outline: 1.5px dashed var(--dsw-alias-state-business-primary);
   outline-offset: -2px;
 }
+
+
+/* --- Phone: the hero keeps one column and sheds vertical padding ---------- */
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 24px 14px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .composer {
+    padding: 14px;
+  }
+}
+
+
+/* Phones have no keyboard hint to follow; the space is worth more. */
+@media (max-width: 640px) {
+  .toolbarHint {
+    display: none;
+  }
+}

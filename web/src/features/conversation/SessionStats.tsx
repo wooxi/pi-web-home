@@ -4,6 +4,7 @@ import { GaugeIcon } from "../../components/icons.tsx";
 import { formatRunDuration, formatTokens, formatTurnDuration } from "../../lib/duration.ts";
 import { StatPanel, StatRow } from "./StatPanel.tsx";
 import {
+  formatCost,
   formatExactCount,
   formatLatencySeconds,
   formatTokensPerSecond,
@@ -187,6 +188,7 @@ function UsagePill({
   const t = useT();
   const total = `${formatTokens(stats.totalTokens)} tok`;
   const cacheHit = stats.cacheHitPercent === null ? null : t("stats.cacheHitPercent", { percent: stats.cacheHitPercent });
+  const cost = stats.cost !== null && stats.cost > 0 ? formatCost(stats.cost) : null;
   const { usage } = stats;
 
   return (
@@ -196,7 +198,7 @@ function UsagePill({
         className={styles.pill}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={cacheHit === null ? total : `${total} · ${cacheHit}`}
+        aria-label={[total, cacheHit, cost].filter(Boolean).join(" · ")}
         onClick={() => onOpen(!open)}
       >
         <Glyph name="database" size={14} />
@@ -210,6 +212,14 @@ function UsagePill({
               {cacheHit}
             </>
           )}
+          {cost === null ? null : (
+            <>
+              <span className={styles.sep} aria-hidden>
+                ·
+              </span>
+              {cost}
+            </>
+          )}
         </span>
       </button>
       {open ? (
@@ -221,6 +231,9 @@ function UsagePill({
           {stats.model === null ? null : <StatRow label={t("stats.providerModel")} value={stats.model} route />}
           {stats.cacheHitPercent === null ? null : (
             <StatRow label={t("stats.cacheHit")} value={`${stats.cacheHitPercent}%`} />
+          )}
+          {stats.cost === null || stats.cost <= 0 ? null : (
+            <StatRow label={t("stats.cost")} value={formatCost(stats.cost)} />
           )}
           <StatRow label={t("stats.uncachedInput")} value={tok(usage.input)} />
           <StatRow label={t("stats.cacheRead")} value={tok(usage.cacheRead)} />

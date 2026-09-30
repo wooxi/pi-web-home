@@ -154,3 +154,17 @@
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-interactive-bg-hover);
 }
+
+
+/* --- Phone: the three-region shell collapses to one column --------------- */
+
+@media (max-width: 640px) {
+  .header {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .headerTitle {
+    font-size: 13px;
+  }
+}

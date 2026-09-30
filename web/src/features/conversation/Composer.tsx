@@ -15,6 +15,7 @@ import { ApprovalPicker } from "./ApprovalPicker.tsx";
 import { SlashMenu } from "./SlashMenu.tsx";
 import { useSlashCompletion } from "./useSlashCompletion.ts";
 import styles from "./Composer.module.css";
+import heroStyles from "./NewSessionHero.module.css";
 import { useT } from "../../lib/app-state.ts";
 
 /**
@@ -45,6 +46,15 @@ export interface ComposerProps {
   /** `images` are the pictures going with the message; empty for a text-only turn. */
   onSend(text: string, mode: "prompt" | "steer" | "followUp", images: ImageBlock[]): Promise<boolean>;
   onAbort(): void;
+  /**
+   * `hero` renders the new-session card: dsh's taller input, autofocus, a
+   * keyboard hint, and a submit that starts a session. Everything else
+   * (slash menu, attachments, toolbar cluster) is shared with the session
+   * composer — it is the same input one step earlier in the session's life.
+   */
+  variant?: "session" | "hero";
+  /** Hero only: whether a workspace is picked; without one the input is off. */
+  projectReady?: boolean;
 }
 
 /** pi delivers a queued message as `followUp`; a steering one as `steer`. */
@@ -83,7 +93,10 @@ export function Composer({
   session,
   onSend,
   onAbort,
+  variant = "session",
+  projectReady = true,
 }: ComposerProps) {
+  const hero = variant === "hero";
   const t = useT();
   const [text, setText] = useState("");
   /** The pictures going with the text; see `useImageDraft` for why they are a hook. */
@@ -109,6 +122,12 @@ export function Composer({
     element.style.height = "auto";
     element.style.height = `${Math.min(element.scrollHeight, 220)}px`;
   }, [text]);
+
+  // The hero grabs focus on mount (its whole job is the first message); the
+  // session composer keeps focus ownership with the conversation flow.
+  useEffect(() => {
+    if (hero) textareaRef.current?.focus();
+  }, [hero]);
 
   const submit = async (override?: BusySendBehavior): Promise<void> => {
     const message = text.trim();
@@ -143,10 +162,15 @@ export function Composer({
     }
   };
 
+  const composerClass = hero ? heroStyles.composer : styles.composer;
+  const inputClass = hero ? heroStyles.input : styles.input;
+  const toolbarClass = hero ? heroStyles.toolbar : styles.toolbar;
+  const sendClass = hero ? heroStyles.send : styles.send;
+
   return (
-    <div className={styles.wrap}>
+    <div className={hero ? undefined : styles.wrap}>
       <div
-        className={styles.composer}
+        className={composerClass}
         data-dragging={draft.dragging || undefined}
         {...draft.dragProps}
       >
@@ -167,15 +191,21 @@ export function Composer({
 
         <textarea
           ref={textareaRef}
-          className={styles.input}
+          className={inputClass}
           value={text}
-          rows={1}
+          rows={hero ? 2 : 1}
           spellCheck={false}
           disabled={disabled}
           placeholder={
-            disabled ? t("composer.chooseOrCreate") : t("composer.placeholder")
+            hero
+              ? projectReady
+                ? t("hero.placeholder")
+                : t("sidebar.newSessionNoProject")
+              : disabled
+                ? t("composer.chooseOrCreate")
+                : t("composer.placeholder")
           }
-          aria-label={t("composer.inputLabel")}
+          aria-label={hero ? t("hero.firstMessageLabel") : t("composer.inputLabel")}
           onChange={(event) => {
             setText(event.target.value);
             completion.sync();
@@ -186,7 +216,8 @@ export function Composer({
           onPaste={draft.onPaste}
         />
 
-        <div className={styles.toolbar}>
+        <div className={toolbarClass}>
+          {hero ? <span className={heroStyles.toolbarHint}>{t("hero.keyboardHint")}</span> : null}
           {isStreaming ? (
             <div className={styles.modes} role="radiogroup" aria-label={t("composer.sendMode")}>
               <button
@@ -223,7 +254,7 @@ export function Composer({
           <span className={styles.spacer} />
 
           {/* Approval-gate mode switch: global, one file behind every session. */}
-          <ApprovalPicker models={session?.models ?? null} />
+          <ApprovalPicker />
 
           {session ? (
             <ModelPicker
@@ -235,7 +266,7 @@ export function Composer({
             />
           ) : null}
 
-          {session ? (
+          {!hero && session ? (
             <ContextMeter context={session.context} onRequestLive={session.onRequestLive} />
           ) : null}
 
@@ -258,11 +289,11 @@ export function Composer({
           ) : (
             <button
               type="button"
-              className={styles.send}
+              className={sendClass}
               disabled={disabled || sending || (text.trim().length === 0 && draft.images.length === 0)}
               onClick={() => void submit()}
-              aria-label={t("composer.send")}
-              title={t("composer.send")}
+              aria-label={hero ? t("hero.start") : t("composer.send")}
+              title={hero ? t("hero.start") : t("composer.send")}
             >
               <SendIcon />
             </button>
