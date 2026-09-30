@@ -10,6 +10,7 @@ import {
 import { actions, appStore, isDraftSession, useT } from "../../lib/app-state.ts";
 import { Glyph } from "../../components/dsh-icons.tsx";
 import { StateDot, type StateDotState } from "../../components/StateDot.tsx";
+import { confirmDialog, promptDialog } from "../../components/AppDialog.tsx";
 import type { MessageKey } from "../../lib/i18n/index.ts";
 import { formatRelativeTime } from "../../lib/format.ts";
 import type { ProjectNode } from "../../lib/project-tree.ts";
@@ -156,7 +157,7 @@ function SessionRow({
 }) {
   const t = useT();
   const rename = async (): Promise<void> => {
-    const next = window.prompt(t("session.renamePrompt"), title);
+    const next = await promptDialog({ title: t("session.renamePrompt"), initial: title });
     if (next === null) return;
     await actions.renameSession(sessionPath, next);
   };
@@ -167,7 +168,10 @@ function SessionRow({
   };
 
   const remove = async (): Promise<void> => {
-    const confirmed = window.confirm(t("session.deleteConfirm", { title }));
+    const confirmed = await confirmDialog({
+      title: t("session.deleteConfirm", { title }),
+      danger: true,
+    });
     if (!confirmed) return;
     await actions.deleteSession(sessionPath);
   };
@@ -275,15 +279,16 @@ export function ProjectTreeItem({ node }: { node: ProjectNode }) {
   }
 
   const renameProject = async (): Promise<void> => {
-    const next = window.prompt(t("project.renamePrompt"), project.title);
+    const next = await promptDialog({ title: t("project.renamePrompt"), initial: project.title });
     if (next === null) return;
     await actions.renameProject(project.id, next);
   };
 
   const removeProject = async (): Promise<void> => {
-    const confirmed = window.confirm(
-      t("project.deleteConfirm", { title: project.title }),
-    );
+    const confirmed = await confirmDialog({
+      title: t("project.deleteConfirm", { title: project.title }),
+      danger: true,
+    });
     if (!confirmed) return;
     await actions.removeProject(project.id);
   };

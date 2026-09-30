@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppDialogHost } from "./components/AppDialog.tsx";
 import { ImageLightboxProvider } from "./components/ImageLightbox.tsx";
 import { AppLayout } from "./layout/AppLayout.tsx";
 import { connectEvents } from "./lib/sse.ts";
@@ -12,6 +13,7 @@ export function App() {
   return (
     <ImageLightboxProvider>
       <AppLayout />
+      <AppDialogHost />
     </ImageLightboxProvider>
   );
 }

@@ -1,0 +1,112 @@
+/*
+ * Same shell as the settings dialog (mask + floating surface with a shadow,
+ * no hairline ring), narrowed to a confirm card. Escape/Enter are handled by
+ * the host component's keydown wrapper.
+ */
+
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.32);
+}
+
+.dialog {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--dsw-alias-bg-base);
+  box-shadow: var(--dsw-elevation-float);
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary);
+  overflow-wrap: anywhere;
+}
+
+.message {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.input {
+  box-sizing: border-box;
+  margin-top: 14px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--dsw-alias-separator-primary);
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13.5px;
+  line-height: 20px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--dsw-alias-accent-primary);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.cancel,
+.confirm,
+.confirmDanger {
+  padding: 7px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.cancel {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.cancel:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.confirm {
+  /* Same fill the composer's send disc uses. */
+  background: var(--dsw-alias-button-info-fill);
+  color: #fff;
+}
+
+.confirm:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.confirmDanger {
+  background: rgb(236, 19, 19);
+  color: #fff;
+}
+
+.confirmDanger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.confirm:disabled,
+.confirmDanger:disabled {
+  opacity: 0.45;
+}

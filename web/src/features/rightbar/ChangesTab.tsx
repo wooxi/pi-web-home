@@ -6,6 +6,7 @@ import type { GitFileEntry, GitStatusView } from "../../lib/types.ts";
 import { ChangesFile } from "./ChangesFile.tsx";
 import { CommitBar, HistoryList } from "./ChangesFooter.tsx";
 import { TreeChevronIcon } from "./rightbar-icons.tsx";
+import { confirmDialog } from "../../components/AppDialog.tsx";
 import pane from "./Pane.module.css";
 import styles from "./ChangesTab.module.css";
 import { appStore, useT, workspaceChanged } from "../../lib/app-state.ts";
@@ -133,10 +134,10 @@ export function ChangesTab({
   );
 
   const discard = useCallback(
-    (path: string) => {
+    async (path: string) => {
       // Discarding is the one action here that destroys work, and it cannot be
       // undone; the confirmation names the file rather than asking "are you sure".
-      if (!window.confirm(t("changes.restoreConfirm", { path }))) return;
+      if (!(await confirmDialog({ title: t("changes.restoreConfirm", { path }), danger: true }))) return;
       void run(() => api.discardPaths(projectId, [path]));
     },
     [projectId, run],
